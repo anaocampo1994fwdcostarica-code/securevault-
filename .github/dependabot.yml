@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # A03: revisa semanalmente si hay versiones nuevas o parches de seguridad en npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # A03: mantiene actualizadas las acciones usadas en el pipeline
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
