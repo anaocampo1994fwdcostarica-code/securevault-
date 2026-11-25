@@ -3,6 +3,8 @@ import helmet from 'helmet';
 import { query } from './db.js';
 import sessionMiddleware from './session.js';
 import authRoutes from './routes/auth.js';
+import notesRoutes from './routes/notes.js';
+import profileRoutes from './routes/profile.js';
 
 const app = express();
 
@@ -28,6 +30,8 @@ app.get('/health', async (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/notes', notesRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Manejador 404 – A02: no revelar información
 app.use((req, res) => {
