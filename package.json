@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --env-file=.env --watch src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test",
     "db:migrate": "node --env-file=.env scripts/migrate.js",
     "make-admin": "node --env-file=.env scripts/make-admin.js"
   },
@@ -30,6 +30,7 @@
     "express-session": "^1.19.0",
     "helmet": "^8.3.0",
     "pg": "^8.23.1",
+    "pino": "^10.4.0",
     "zod": "^4.6.7"
   },
   "engines": {

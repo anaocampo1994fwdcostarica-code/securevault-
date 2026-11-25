@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { logger } from './logger.js';
 import express from 'express';
 import helmet from 'helmet';
 import { query } from './db.js';
@@ -27,7 +28,7 @@ app.get('/health', async (req, res) => {
     await query('SELECT 1');
     res.json({ status: 'ok' });
   } catch (e) {
-    console.error('Health check falló:', e.message);
+    logger.error({ err: e.message }, 'Health check falló');
     // RF-08: no revelar detalles del error
     res.status(503).json({ status: 'degraded' });
   }
