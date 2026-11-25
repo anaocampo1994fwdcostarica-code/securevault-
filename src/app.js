@@ -1,12 +1,20 @@
 import express from 'express';
 import helmet from 'helmet';
 import { query } from './db.js';
+import sessionMiddleware from './session.js';
+import authRoutes from './routes/auth.js';
 
 const app = express();
+
+// A02/A07: confiar en el primer proxy en producción para cookies Secure y rate limiting
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
 
 app.disable('x-powered-by'); // A02: ocultar detalles del framework
 app.use(helmet()); // A02: cabeceras de seguridad
 app.use(express.json({ limit: '10kb' })); // A06: límite de diseño para tamaño de cuerpo
+app.use(sessionMiddleware); // A07: sesiones seguras en PostgreSQL
 
 app.get('/health', async (req, res) => {
   try {
@@ -19,6 +27,8 @@ app.get('/health', async (req, res) => {
   }
 });
 
+app.use('/api/auth', authRoutes);
+
 // Manejador 404 – A02: no revelar información
 app.use((req, res) => {
   res.status(404).json({ error: 'No encontrado' });
@@ -26,8 +36,12 @@ app.use((req, res) => {
 
 // Manejador global de errores – A10: fallar de forma segura sin stack trace
 app.use((err, req, res, next) => {
-  console.error('Error interno:', err);
-  res.status(500).json({ error: 'Error interno' });
+  console.error(`Error en ${req.method} ${req.originalUrl}:`, err.message);
+  const status = err.status || err.statusCode;
+  if (status >= 400 && status <= 499) {
+    return res.status(status).json({ error: 'Solicitud inválida' });
+  }
+  return res.status(500).json({ error: 'Error interno' });
 });
 
 export default app;
