@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureVault - Mis notas</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <!-- A02/A05: scripts externos con defer, compatible con CSP -->
+  <script src="/js/api.js" defer></script>
+  <script src="/js/notes.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">SecureVault — <span id="user-name">...</span></div>
+    <nav class="topbar-nav">
+      <a href="/profile.html" class="btn btn-secondary">Perfil</a>
+      <a id="admin-link" href="/admin.html" class="btn btn-secondary hidden">Admin</a>
+      <button id="logout-btn" type="button" class="btn btn-danger">Cerrar sesión</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div id="alert" class="alert hidden" role="alert"></div>
+
+    <div class="notes-grid">
+      <section class="card">
+        <h2>Mis notas</h2>
+        <ul id="notes-list" class="note-list"></ul>
+      </section>
+
+      <div>
+        <section class="card">
+          <h2>Crear nota</h2>
+          <form id="create-note-form">
+            <div class="form-group">
+              <label for="new-title">Título</label>
+              <input id="new-title" type="text" maxlength="120" required>
+            </div>
+            <div class="form-group">
+              <label for="new-content">Contenido</label>
+              <textarea id="new-content" maxlength="5000" required></textarea>
+            </div>
+            <button type="submit">Guardar nota</button>
+          </form>
+        </section>
+
+        <section id="note-detail-card" class="card hidden">
+          <h2>Detalle de la nota</h2>
+          <form id="edit-note-form">
+            <div class="form-group">
+              <label for="edit-title">Título</label>
+              <input id="edit-title" type="text" maxlength="120" required>
+            </div>
+            <div class="form-group">
+              <label for="edit-content">Contenido</label>
+              <textarea id="edit-content" maxlength="5000" required></textarea>
+            </div>
+            <div class="actions">
+              <button type="submit">Actualizar</button>
+              <button id="delete-note-btn" type="button" class="btn-danger">Eliminar</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

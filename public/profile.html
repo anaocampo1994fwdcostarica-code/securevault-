@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureVault - Perfil</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <!-- A02/A05: scripts externos con defer, compatible con CSP -->
+  <script src="/js/api.js" defer></script>
+  <script src="/js/profile.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">SecureVault — Perfil</div>
+    <nav class="topbar-nav">
+      <a href="/notes.html" class="btn btn-secondary">Mis notas</a>
+      <a id="admin-link" href="/admin.html" class="btn btn-secondary hidden">Admin</a>
+      <button id="logout-btn" type="button" class="btn btn-danger">Cerrar sesión</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div id="alert" class="alert hidden" role="alert"></div>
+
+    <section class="card">
+      <h2>Información de la cuenta</h2>
+      <p><strong>Nombre:</strong> <span id="profile-name">-</span></p>
+      <p><strong>Correo:</strong> <span id="profile-email">-</span></p>
+      <p><strong>Rol:</strong> <span id="profile-role">-</span></p>
+      <p><strong>Teléfono:</strong> <span id="profile-phone">Sin teléfono registrado</span></p>
+    </section>
+
+    <section class="card">
+      <h2>Actualizar teléfono</h2>
+      <form id="phone-form">
+        <div class="form-group">
+          <label for="phone">Número telefónico (8 a 15 dígitos)</label>
+          <input id="phone" name="phone" type="tel" placeholder="8888-1234" required>
+        </div>
+        <button type="submit">Guardar teléfono</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

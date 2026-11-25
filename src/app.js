@@ -1,3 +1,4 @@
+import path from 'node:path';
 import express from 'express';
 import helmet from 'helmet';
 import { query } from './db.js';
@@ -16,6 +17,8 @@ if (process.env.NODE_ENV === 'production') {
 
 app.disable('x-powered-by'); // A02: ocultar detalles del framework
 app.use(helmet()); // A02: cabeceras de seguridad
+// A02/A08: servir archivos estáticos locales sin scripts inline antes de las rutas /api
+app.use(express.static(path.join(import.meta.dirname, '..', 'public'), { extensions: ['html'] }));
 app.use(express.json({ limit: '10kb' })); // A06: límite de diseño para tamaño de cuerpo
 app.use(sessionMiddleware); // A07: sesiones seguras en PostgreSQL
 

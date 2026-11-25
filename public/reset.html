@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureVault - Restablecer contraseña</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <!-- A02/A05: scripts externos con defer, cero JS inline -->
+  <script src="/js/api.js" defer></script>
+  <script src="/js/reset.js" defer></script>
+</head>
+<body>
+  <main class="auth-container">
+    <section class="card">
+      <h1>Nueva contraseña</h1>
+      <div id="alert" class="alert hidden" role="alert"></div>
+
+      <form id="reset-form">
+        <div class="form-group">
+          <label for="password">Nueva contraseña</label>
+          <input id="password" name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+          <p class="hint">
+            Requisitos: mínimo 12 caracteres, al menos una mayúscula, una minúscula, un número y un símbolo.
+          </p>
+        </div>
+        <button type="submit">Actualizar contraseña</button>
+      </form>
+
+      <div class="links">
+        <a href="/index.html">Volver a iniciar sesión</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
