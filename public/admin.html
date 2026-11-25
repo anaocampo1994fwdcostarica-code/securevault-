@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureVault - Administración</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <!-- A02/A05: scripts externos con defer, cero JS inline -->
+  <script src="/js/api.js" defer></script>
+  <script src="/js/admin.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="/notes.html" class="topbar-brand">
+        <img src="/img/shield.svg" alt="SecureVault">
+        <span>SecureVault</span>
+      </a>
+      <nav class="topbar-tabs">
+        <a href="/notes.html" class="tab-link">Mis notas</a>
+        <a id="admin-link" href="/admin.html" class="tab-link active">Administración</a>
+        <a href="/profile.html" class="tab-link">Perfil</a>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <span id="user-name" class="user-label">...</span>
+      <span id="user-role" class="chip chip-blue">admin</span>
+      <button id="logout-btn" type="button" class="btn-danger">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="container">
+      <div id="alert" class="alert hidden" role="alert"></div>
+
+      <section id="admin-content">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">Total de usuarios</div>
+            <div id="metric-users" class="metric-value">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Cuentas bloqueadas ahora</div>
+            <div id="metric-locked" class="metric-value">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Intentos fallidos registrados</div>
+            <div id="metric-failed" class="metric-value">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Accesos denegados</div>
+            <div id="metric-denied" class="metric-value">0</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Usuarios</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Correo</th>
+                  <th>Rol</th>
+                  <th>Intentos fallidos</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Bitácora de auditoría</h2>
+            <div class="filter-bar">
+              <button type="button" id="filter-all" class="btn-secondary active">Todos</button>
+              <button type="button" id="filter-auth" class="btn-secondary">Autenticación</button>
+              <button type="button" id="filter-denied" class="btn-secondary">Accesos denegados</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Usuario</th>
+                  <th>IP</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="audit-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">SecureVault · Laboratorio OWASP Top 10:2025</footer>
+</body>
+</html>

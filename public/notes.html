@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureVault - Bóveda de notas</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <!-- A02/A05: scripts externos con defer, cero JS inline -->
+  <script src="/js/api.js" defer></script>
+  <script src="/js/notes.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="/notes.html" class="topbar-brand">
+        <img src="/img/shield.svg" alt="SecureVault">
+        <span>SecureVault</span>
+      </a>
+      <nav class="topbar-tabs">
+        <a href="/notes.html" class="tab-link active">Mis notas</a>
+        <a id="admin-link" href="/admin.html" class="tab-link hidden">Administración</a>
+        <a href="/profile.html" class="tab-link">Perfil</a>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <span id="user-name" class="user-label">...</span>
+      <span id="user-role" class="chip chip-blue">...</span>
+      <button id="logout-btn" type="button" class="btn-danger">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="container">
+      <section class="hero-card">
+        <div>
+          <h1>Bóveda de notas</h1>
+          <p class="hero-subtitle">Notas almacenadas: <strong id="notes-count">0</strong></p>
+        </div>
+        <div class="hero-chips">
+          <span class="hero-chip mono">AES-256-GCM</span>
+          <span class="hero-chip">Acceso solo del propietario</span>
+        </div>
+      </section>
+
+      <div id="alert" class="alert hidden" role="alert"></div>
+
+      <div class="notes-layout">
+        <section class="card">
+          <h2>Nueva nota</h2>
+          <form id="create-note-form">
+            <div class="form-group">
+              <div class="label-row">
+                <label for="new-title">Título</label>
+                <span id="title-counter" class="char-counter">0 / 120</span>
+              </div>
+              <input id="new-title" type="text" maxlength="120" placeholder="Título de la nota..." required>
+            </div>
+            <div class="form-group">
+              <div class="label-row">
+                <label for="new-content">Contenido</label>
+                <span id="content-counter" class="char-counter">0 / 5000</span>
+              </div>
+              <textarea id="new-content" maxlength="5000" placeholder="Escribe el contenido confidencial..." required></textarea>
+            </div>
+            <button type="submit" class="btn-full">Guardar y blindar nota</button>
+          </form>
+        </section>
+
+        <div>
+          <section class="card">
+            <h2>Notas guardadas</h2>
+            <div id="notes-list" class="note-cards"></div>
+          </section>
+
+          <section id="note-detail-card" class="card hidden">
+            <div class="card-header">
+              <h2>Detalle de la nota</h2>
+              <span class="chip chip-blue mono">AES-256-GCM</span>
+            </div>
+            <form id="edit-note-form">
+              <div class="form-group">
+                <label for="edit-title">Título</label>
+                <input id="edit-title" type="text" maxlength="120" required>
+              </div>
+              <div class="form-group">
+                <label for="edit-content">Contenido descifrado</label>
+                <textarea id="edit-content" maxlength="5000" required></textarea>
+              </div>
+              <div class="actions">
+                <button type="submit">Editar</button>
+                <button id="delete-note-btn" type="button" class="btn-danger">Eliminar</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">SecureVault · Laboratorio OWASP Top 10:2025</footer>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureVault - Perfil</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <!-- A02/A05: scripts externos con defer, cero JS inline -->
+  <script src="/js/api.js" defer></script>
+  <script src="/js/profile.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="/notes.html" class="topbar-brand">
+        <img src="/img/shield.svg" alt="SecureVault">
+        <span>SecureVault</span>
+      </a>
+      <nav class="topbar-tabs">
+        <a href="/notes.html" class="tab-link">Mis notas</a>
+        <a id="admin-link" href="/admin.html" class="tab-link hidden">Administración</a>
+        <a href="/profile.html" class="tab-link active">Perfil</a>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <span id="user-name" class="user-label">...</span>
+      <span id="user-role" class="chip chip-blue">...</span>
+      <button id="logout-btn" type="button" class="btn-danger">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="container">
+      <div id="alert" class="alert hidden" role="alert"></div>
+
+      <section class="card">
+        <div class="profile-header">
+          <div id="profile-avatar" class="avatar">?</div>
+          <div>
+            <h1 id="profile-name">...</h1>
+            <p id="profile-email" class="hint">...</p>
+          </div>
+          <span id="profile-role-chip" class="chip chip-blue">...</span>
+        </div>
+      </section>
+
+      <div class="profile-grid">
+        <section class="card">
+          <div class="card-header">
+            <h2>Información de la cuenta</h2>
+            <span class="chip chip-blue mono">AES-256-GCM</span>
+          </div>
+          <p><strong>Teléfono registrado:</strong> <span id="profile-phone" class="mono">Sin teléfono registrado</span></p>
+        </section>
+
+        <section class="card">
+          <h2>Actualizar teléfono</h2>
+          <form id="phone-form">
+            <div class="form-group">
+              <label for="phone">Número telefónico (8 a 15 dígitos)</label>
+              <input id="phone" name="phone" type="tel" placeholder="8888-1234" required>
+            </div>
+            <button type="submit">Guardar teléfono</button>
+          </form>
+        </section>
+      </div>
+
+      <section class="card">
+        <h2>Cómo se protege tu cuenta</h2>
+        <ul class="protection-list">
+          <li><span class="chip chip-blue mono">Argon2id</span> Contraseñas almacenadas con hash resistente a fuerza bruta.</li>
+          <li><span class="chip chip-blue mono">AES-256-GCM</span> Notas y teléfono cifrados en servidor ligados a tu identificador.</li>
+          <li><span class="chip chip-green">Sesión HttpOnly + SameSite</span> Cookie inaccesible desde JavaScript y protegida contra CSRF.</li>
+          <li><span class="chip chip-amber">Rate limiting</span> Límite de solicitudes en registro, inicio de sesión y recuperación.</li>
+          <li><span class="chip chip-red">Bloqueo tras 5 intentos</span> Bloqueo temporal de 15 minutos ante fallos consecutivos.</li>
+          <li><span class="chip chip-blue">Bitácora de auditoría</span> Registro de eventos de acceso, cambios de rol y fallos sin guardar secretos.</li>
+          <li><span class="chip chip-green">Control de acceso por propietario</span> Cada consulta valida que el recurso pertenezca al usuario autenticado.</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">SecureVault · Laboratorio OWASP Top 10:2025</footer>
+</body>
+</html>
