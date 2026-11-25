@@ -10,26 +10,36 @@
   <script src="/js/reset.js" defer></script>
 </head>
 <body>
-  <main class="auth-container">
-    <section class="card">
-      <h1>Nueva contraseña</h1>
-      <div id="alert" class="alert hidden" role="alert"></div>
-
-      <form id="reset-form">
-        <div class="form-group">
-          <label for="password">Nueva contraseña</label>
-          <input id="password" name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
-          <p class="hint">
-            Requisitos: mínimo 12 caracteres, al menos una mayúscula, una minúscula, un número y un símbolo.
-          </p>
+  <main class="page-main">
+    <div class="auth-container">
+      <section class="card">
+        <div class="brand-header">
+          <img src="/img/shield.svg" alt="Escudo SecureVault" class="brand-logo">
+          <div>
+            <h1>Nueva contraseña</h1>
+            <p class="hint">Al actualizarla se cerrarán tus sesiones activas.</p>
+          </div>
         </div>
-        <button type="submit">Actualizar contraseña</button>
-      </form>
+        <div id="alert" class="alert hidden" role="alert"></div>
 
-      <div class="links">
-        <a href="/index.html">Volver a iniciar sesión</a>
-      </div>
-    </section>
+        <form id="reset-form">
+          <div class="form-group">
+            <label for="password">Nueva contraseña</label>
+            <input id="password" name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+            <p class="hint">
+              Mínimo 12 caracteres, mayúscula, minúscula, número y símbolo.
+            </p>
+          </div>
+          <button type="submit" class="btn-full">Actualizar contraseña</button>
+        </form>
+
+        <div class="links">
+          <a href="/index.html">Volver a iniciar sesión</a>
+        </div>
+      </section>
+    </div>
   </main>
+
+  <footer class="footer">SecureVault · Laboratorio OWASP Top 10:2025</footer>
 </body>
 </html>

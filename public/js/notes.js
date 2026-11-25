@@ -1,16 +1,31 @@
-// A01/A05: gestión de notas usando únicamente createElement y textContent (anti-XSS)
+// A01/A05: gestión de notas con createElement y textContent; nunca muestra contenido en la lista
 document.addEventListener('DOMContentLoaded', async () => {
   const alertBox = document.getElementById('alert');
   const userNameEl = document.getElementById('user-name');
+  const userRoleEl = document.getElementById('user-role');
   const adminLink = document.getElementById('admin-link');
   const logoutBtn = document.getElementById('logout-btn');
+  const notesCountEl = document.getElementById('notes-count');
   const notesList = document.getElementById('notes-list');
   const createForm = document.getElementById('create-note-form');
+  const newTitleInput = document.getElementById('new-title');
+  const newContentInput = document.getElementById('new-content');
+  const titleCounter = document.getElementById('title-counter');
+  const contentCounter = document.getElementById('content-counter');
   const detailCard = document.getElementById('note-detail-card');
   const editForm = document.getElementById('edit-note-form');
   const deleteBtn = document.getElementById('delete-note-btn');
 
   let selectedNoteId = null;
+
+  function updateCounters() {
+    titleCounter.textContent = `${newTitleInput.value.length} / 120`;
+    contentCounter.textContent = `${newContentInput.value.length} / 5000`;
+  }
+
+  newTitleInput.addEventListener('input', updateCounters);
+  newContentInput.addEventListener('input', updateCounters);
+  updateCounters();
 
   async function loadUser() {
     const res = await api('GET', '/api/auth/me');
@@ -18,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     userNameEl.textContent = res.data.name;
+    userRoleEl.textContent = res.data.role;
     if (res.data.role === 'admin') {
       adminLink.classList.remove('hidden');
     }
@@ -32,27 +48,43 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     notesList.replaceChildren();
     const notes = Array.isArray(res.data) ? res.data : [];
+    notesCountEl.textContent = String(notes.length);
 
     if (notes.length === 0) {
-      const emptyItem = document.createElement('li');
-      emptyItem.className = 'hint';
-      emptyItem.textContent = 'No tienes notas guardadas.';
-      notesList.appendChild(emptyItem);
+      const empty = document.createElement('p');
+      empty.className = 'hint';
+      empty.textContent = 'No tienes notas guardadas.';
+      notesList.appendChild(empty);
       return;
     }
 
     for (const note of notes) {
-      const li = document.createElement('li');
-      li.className = 'note-item';
-
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'note-item-btn';
-      btn.textContent = note.title;
+      btn.className = 'note-card-btn';
+
+      const titleDiv = document.createElement('div');
+      titleDiv.className = 'note-card-title';
+      titleDiv.textContent = note.title;
+
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'note-card-meta';
+
+      const dateSpan = document.createElement('span');
+      dateSpan.textContent = new Date(note.updated_at).toLocaleString();
+
+      const chip = document.createElement('span');
+      chip.className = 'chip chip-blue';
+      chip.textContent = 'Cifrada';
+
+      metaDiv.appendChild(dateSpan);
+      metaDiv.appendChild(chip);
+
+      btn.appendChild(titleDiv);
+      btn.appendChild(metaDiv);
       btn.addEventListener('click', () => openNote(note.id));
 
-      li.appendChild(btn);
-      notesList.appendChild(li);
+      notesList.appendChild(btn);
     }
   }
 
@@ -74,8 +106,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     event.preventDefault();
     clearAlert(alertBox);
 
-    const title = document.getElementById('new-title').value;
-    const content = document.getElementById('new-content').value;
+    const title = newTitleInput.value;
+    const content = newContentInput.value;
 
     const res = await api('POST', '/api/notes', { title, content });
     if (!res.ok) {
@@ -85,7 +117,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     createForm.reset();
-    showAlert(alertBox, 'Nota creada correctamente', 'success');
+    updateCounters();
+    showAlert(alertBox, 'Nota cifrada y guardada correctamente', 'success');
     await loadNotes();
   });
 

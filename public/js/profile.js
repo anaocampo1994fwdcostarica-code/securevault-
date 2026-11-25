@@ -1,11 +1,14 @@
-// A02/A05: muestra datos de perfil con textContent y permite actualizar el teléfono
+// A02/A05/A08: perfil con avatar de iniciales sin foto y datos renderizados con textContent
 document.addEventListener('DOMContentLoaded', async () => {
   const alertBox = document.getElementById('alert');
+  const userNameEl = document.getElementById('user-name');
+  const userRoleEl = document.getElementById('user-role');
   const adminLink = document.getElementById('admin-link');
   const logoutBtn = document.getElementById('logout-btn');
+  const avatarEl = document.getElementById('profile-avatar');
   const nameEl = document.getElementById('profile-name');
   const emailEl = document.getElementById('profile-email');
-  const roleEl = document.getElementById('profile-role');
+  const roleChipEl = document.getElementById('profile-role-chip');
   const phoneEl = document.getElementById('profile-phone');
   const phoneForm = document.getElementById('phone-form');
 
@@ -16,9 +19,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    userNameEl.textContent = res.data.name;
+    userRoleEl.textContent = res.data.role;
+    avatarEl.textContent = getInitial(res.data.name);
     nameEl.textContent = res.data.name;
     emailEl.textContent = res.data.email;
-    roleEl.textContent = res.data.role;
+    roleChipEl.textContent = res.data.role;
     phoneEl.textContent = res.data.phone_masked || 'Sin teléfono registrado';
 
     if (res.data.role === 'admin') {

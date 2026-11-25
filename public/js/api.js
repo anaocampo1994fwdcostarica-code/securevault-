@@ -1,4 +1,4 @@
-// A05/A07: cliente HTTP centralizado con cookies same-origin y sin almacenamiento de secretos en JS
+// A05/A07: cliente HTTP centralizado con cookies same-origin y renderizado seguro sin innerHTML
 const PUBLIC_PATHS = new Set([
   '/',
   '/index.html',
@@ -12,16 +12,12 @@ const PUBLIC_PATHS = new Set([
 
 /**
  * Realiza una petición fetch JSON con credenciales same-origin.
- * Si la respuesta es 401 en una página protegida, redirige a /index.html.
- * @param {string} method - Método HTTP (GET, POST, PUT, PATCH, DELETE).
- * @param {string} url - Ruta del endpoint.
- * @param {object} [body] - Cuerpo JSON opcional.
- * @returns {Promise<{ ok: boolean, status: number, data: any }>}
+ * Si el servidor responde 401 en una página protegida, redirige a /index.html.
  */
 async function api(method, url, body) {
   const options = {
     method,
-    credentials: 'same-origin', // A07: envía cookie de sesión HttpOnly solo al mismo origen
+    credentials: 'same-origin', // A07: envía la cookie HttpOnly únicamente al mismo origen
     headers: {
       'Content-Type': 'application/json'
     }
@@ -43,7 +39,7 @@ async function api(method, url, body) {
     }
   }
 
-  // A01/A07: redirigir al login si la sesión expiró o no está autenticado en página protegida
+  // A01/A07: si la sesión expiró o no existe, redirigir al inicio de sesión
   if (response.status === 401 && !PUBLIC_PATHS.has(window.location.pathname)) {
     window.location.assign('/index.html');
   }
@@ -56,10 +52,7 @@ async function api(method, url, body) {
 }
 
 /**
- * Muestra un mensaje de estado de forma segura usando textContent (A05: previene XSS).
- * @param {HTMLElement} container - Elemento contenedor de la alerta.
- * @param {string} message - Texto del mensaje.
- * @param {'error'|'success'} type - Tipo de alerta.
+ * Muestra un mensaje usando textContent (A05: previene XSS).
  */
 function showAlert(container, message, type) {
   container.textContent = message;
@@ -67,10 +60,41 @@ function showAlert(container, message, type) {
 }
 
 /**
- * Oculta y limpia un contenedor de alerta.
- * @param {HTMLElement} container - Elemento contenedor.
+ * Limpia y oculta la alerta.
  */
 function clearAlert(container) {
   container.textContent = '';
   container.className = 'alert hidden';
+}
+
+/**
+ * Obtiene la inicial de un nombre para avatares sin foto (A08).
+ */
+function getInitial(name) {
+  const clean = typeof name === 'string' ? name.trim() : '';
+  return clean ? clean.charAt(0).toUpperCase() : '?';
+}
+
+/**
+ * Crea un icono SVG con createElementNS (A05/A08: sin innerHTML ni recursos externos).
+ */
+function createSvgIcon(pathData, className) {
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  if (className) {
+    svg.setAttribute('class', className);
+  }
+
+  for (const d of pathData) {
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', d);
+    svg.appendChild(path);
+  }
+  return svg;
 }
