@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --env-file=.env --watch src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test",
     "db:migrate": "node --env-file=.env scripts/migrate.js",
     "make-admin": "node --env-file=.env scripts/make-admin.js"
   },
