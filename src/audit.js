@@ -37,7 +37,7 @@ export async function logEvent(event, { userId = null, ip = null, metadata = {} 
 
     // A09: alerta simple en consola ante eventos de fuerza bruta o bloqueo
     if (event === 'account_locked' || event === 'login_rate_limited') {
-      console.warn('[ALERTA DE SEGURIDAD]', event, 'ip:', ip);
+      logger.warn('[ALERTA DE SEGURIDAD]', event, 'ip:', ip);
     }
   } catch (err) {
     // A09/A10: registrar fallo de auditoría en consola sin interrumpir la petición
