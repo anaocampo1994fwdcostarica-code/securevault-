@@ -11,9 +11,21 @@ import adminRoutes from './routes/admin.js';
 
 const app = express();
 
-// A02/A07: confiar en el primer proxy en producción para cookies Secure y rate limiting
+// A02/A07: confiar SOLO en proxies conocidos para obtener la IP real del cliente.
+// Cadena en producción: cliente -> Cloudflare -> proxy interno de Render (10.x) -> app.
+// No usar 'true': permitiría falsificar X-Forwarded-For y saltarse el rate limit.
+const TRUSTED_PROXIES = [
+  'loopback', 'linklocal', 'uniquelocal', // redes internas (10.x de Render)
+  // Rangos oficiales de Cloudflare: https://www.cloudflare.com/ips/
+  '173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22',
+  '141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20',
+  '197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13',
+  '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
+  '2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32',
+  '2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32'
+];
 if (process.env.NODE_ENV === 'production') {
-  app.set('trust proxy', 1);
+  app.set('trust proxy', TRUSTED_PROXIES);
 }
 
 app.disable('x-powered-by'); // A02: ocultar detalles del framework
