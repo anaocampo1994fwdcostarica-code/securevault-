@@ -1,99 +1,108 @@
-# Reporte de Auditoría de Seguridad — SecureVault
+# Modelo de amenazas de SecureVault
 
-**Fecha:** 2026-11-25  
-**Alcance:** Revisión estática de código fuente (`src/`, `public/`, `db/`, `scripts/`, configuración raíz).  
-**Estados:** `Cumple` / `Parcial` / `Falta` / `Verificar manualmente`
+Método: STRIDE sobre un diagrama de flujo de datos. Cada amenaza indica la mitigación implementada y dónde está en el código. Lo que no está mitigado se declara como riesgo residual.
 
----
+## Activos
 
-## A) Requisitos funcionales
+| Activo | Dónde vive | Protección |
+| --- | --- | --- |
+| Contraseñas | `users.password_hash` | Hash Argon2id con sal aleatoria |
+| Contenido de notas | `notes.content_enc` | AES-256-GCM con AAD = id del dueño |
+| Teléfono | `users.phone_enc` | AES-256-GCM con AAD = id del usuario |
+| Tokens de recuperación | `password_reset_tokens.token_hash` | Solo hash SHA-256, un uso, 15 minutos |
+| Llave de cifrado | Variable `DATA_ENCRYPTION_KEY` | Fuera del código, en el panel de Render y en un gestor de contraseñas |
+| Secreto de sesión | Variable `SESSION_SECRET` | Fuera del código |
+| Sesiones | Tabla `session` y cookie `sv.sid` | `HttpOnly`, `Secure`, `SameSite=Strict`, 30 minutos |
+| Bitácora | `audit_logs` | Sin contraseñas, tokens ni datos cifrados |
 
-| Requisito | Estado | Evidencia (archivo:línea) | Qué falta |
-| :--- | :--- | :--- | :--- |
-| **RF-01** Registro con correo, nombre y contraseña con política de complejidad; contraseña solo como hash. | Cumple | `src/validation/auth.js:4-29`, `src/routes/auth.js:61-81`, `src/security/password.js:16-18`, `db/schema.sql:9` | — |
-| **RF-02** Login y logout; sesión con cookie HttpOnly, Secure y SameSite; el logout invalida la sesión. | Cumple | `src/routes/auth.js:100-213`, `src/session.js:23-28` | — |
-| **RF-03** Roles usuario y administrador; el rol se verifica siempre en el servidor. | Cumple | `db/schema.sql:10`, `src/routes/auth.js:75-78`, `src/middleware/auth.js:18-41`, `src/routes/admin.js:18` | — |
-| **RF-04** CRUD de notas; cada usuario solo accede a las suyas; contenido cifrado en la BD. | Cumple | `src/routes/notes.js:14-200`, `db/schema.sql:24` | — |
-| **RF-05** Campo sensible (teléfono) cifrado y mostrado enmascarado (`***-***-1234`). | Cumple | `db/schema.sql:12`, `src/routes/profile.js:29-32`, `src/routes/profile.js:56-84` | — |
-| **RF-06** Recuperación de contraseña con token aleatorio de un solo uso, con expiración; en la BD solo el hash del token. | Cumple | `src/routes/auth.js:235-343`, `db/schema.sql:38-40` | — |
-| **RF-07** Panel admin con lista de usuarios y bitácora de eventos de seguridad (logins fallidos, cambios de rol, accesos denegados). | Cumple | `src/routes/admin.js:21-109`, `src/routes/auth.js:121,162`, `src/middleware/auth.js:28`, `public/js/admin.js:73-208` | — |
-| **RF-08** `GET /health` sin revelar versiones ni datos internos. | Cumple | `src/app.js:25-34` | — |
+## Actores
 
----
+| Actor | Qué puede hacer |
+| --- | --- |
+| Usuario legítimo | Gestionar sus propias notas y su perfil |
+| Administrador | Ver usuarios, cambiar roles y leer la bitácora; no puede leer notas ajenas |
+| Atacante externo no autenticado | Enviar peticiones a la URL pública |
+| Usuario autenticado malicioso | Tener una sesión válida e intentar acceder a datos o funciones ajenas |
+| Atacante con acceso a la base de datos | Leer o modificar filas si obtiene las credenciales de Neon |
 
-## B) OWASP Top 10:2025
+## Diagrama de flujo de datos
 
-| Requisito | Estado | Evidencia (archivo:línea) | Qué falta |
-| :--- | :--- | :--- | :--- |
-| **A01 Broken Access Control:** middleware de rol, `WHERE owner_id` en cada consulta, denegar por defecto, lista blanca si hay peticiones salientes. | Cumple | `src/middleware/auth.js:7-41`, `src/routes/notes.js:14,22,45,83,149,182`, `src/routes/profile.js:11`, `src/routes/admin.js:18`, `src/app.js:42-44` (sin peticiones HTTP salientes en `src/`) | — |
-| **A02 Security Misconfiguration:** `helmet` con CSP, `X-Powered-By` desactivado, CORS restringido, `NODE_ENV=production`, sin stack traces al cliente, sin rutas de depuración. | Parcial | `src/app.js:18-19`, `src/app.js:47-54`, `src/session.js:19` | Falta configuración explícita de CORS restringido; verificar `NODE_ENV=production` y cabeceras en vivo. |
-| **A03 Software Supply Chain:** `package-lock.json` presente, uso de `npm ci`, Dependabot o Renovate configurado (`.github/dependabot.yml`), mínimo de dependencias. | Parcial | `package-lock.json` presente, `package.json:25-34` (8 dependencias directas) | Falta `.github/dependabot.yml` y pipeline/guía con `npm ci`. |
-| **A04 Cryptographic Failures:** Argon2id para contraseñas, AES-256-GCM con IV aleatorio de 12 bytes por cifrado, llaves fuera del código, cookies Secure. | Cumple | `src/security/password.js:4-18`, `src/security/crypto.js:3-53`, `src/session.js:25`, `src/db.js:11` | — |
-| **A05 Injection (incluye XSS):** consultas parametrizadas en TODAS las consultas SQL, validación con `zod`, sin `innerHTML` en el frontend, CSP sin scripts inline. | Cumple | `src/db.js:26-28`, `src/audit.js:33-36`, `src/validation/auth.js:1-68`, `src/validation/notes.js:1-33`, `public/js/api.js:56,82`, `public/js/notes.js:64-85`, `public/js/admin.js:43-57` | — |
-| **A06 Insecure Design:** límites de negocio (máximo de notas, tamaño de nota, tamaño del body) y documento de modelo de amenazas (STRIDE o DFD). | Parcial | `src/routes/notes.js:11,49-51` (`MAX_NOTES_PER_USER = 100`), `src/validation/notes.js:10,14`, `src/app.js:22` (`10kb`) | Falta documento de modelo de amenazas (STRIDE o diagrama de flujo de datos). |
-| **A07 Authentication Failures:** rate limiting en login (HTTP 429), bloqueo progresivo, mensajes genéricos, regeneración del ID de sesión al autenticar, expiración de sesión. | Cumple | `src/routes/auth.js:18-31,122,135,140-177`, `src/session.js:27` | — |
-| **A08 Software or Data Integrity Failures:** sin deserializar datos no confiables, sin CDN (o SRI), pipeline de CI con pruebas antes del deploy (`.github/workflows/*.yml`). | Parcial | `public/*.html` y `public/css/styles.css:1` (sin CDN ni recursos externos), `src/validation/*.js` (Zod `.strict()`) | Falta pipeline de CI en `.github/workflows/*.yml` que ejecute pruebas antes del deploy. |
-| **A09 Security Logging and Alerting:** registro de logins, accesos denegados y cambios de rol; sin secretos en logs; formato JSON estructurado (`pino`/`winston`); alerta ante N fallos. | Parcial | `src/audit.js:3-46`, `src/routes/auth.js:121,162,185`, `src/middleware/auth.js:28`, `src/routes/admin.js:99` | Falta logger estructurado JSON (`pino` o `winston`); `src/app.js:48` y `src/audit.js:40` usan `console.*` en texto plano. |
-| **A10 Mishandling of Exceptional Conditions:** manejador global genérico, fail closed, `unhandledRejection`, timeouts en BD y peticiones externas. | Cumple | `src/app.js:47-54`, `src/security/crypto.js:94-96`, `src/routes/notes.js:100-108`, `src/server.js:14-22`, `src/db.js:4-15` | — |
+```mermaid
+flowchart LR
+  subgraph Internet["Internet (no confiable)"]
+    B[Navegador]
+  end
+  subgraph Render["Render"]
+    P[Proxy TLS]
+    N[Node.js / Express - SecureVault]
+  end
+  subgraph Neon["Neon"]
+    D[(PostgreSQL)]
+  end
+  subgraph Entrega["Cadena de entrega"]
+    G[GitHub - rama main]
+    A[GitHub Actions - CI]
+  end
+  B -->|HTTPS| P
+  P -->|HTTP interno| N
+  N -->|TLS verify-full| D
+  G --> A
+  A -->|solo si pasa CI| N
+```
 
----
+Límites de confianza: entre Internet y Render (todo lo que llega del navegador se valida), entre Render y Neon (conexión cifrada y verificada) y en la cadena de entrega (solo llega a producción el código de `main` que pasó el pipeline).
 
-## C) Criptografía: PROHIBIDO
+## STRIDE
 
-| Práctica prohibida | Estado | Evidencia (archivo:línea) | Qué falta |
-| :--- | :--- | :--- | :--- |
-| MD5 o SHA-1/SHA-256 simple para contraseñas | Cumple | No presente; contraseñas usan Argon2id (`src/security/password.js:5-18`) | — |
-| AES en modo ECB | Cumple | No presente; se usa `aes-256-gcm` (`src/security/crypto.js:3`) | — |
-| `crypto.createCipher()` | Cumple | No presente; se usa `createCipheriv` (`src/security/crypto.js:46`) | — |
-| Reutilizar el mismo IV | Cumple | No presente; `randomBytes(IV_LENGTH)` por cifrado (`src/security/crypto.js:45`) | — |
-| Llaves escritas en el código | Cumple | No presente; leídas desde `process.env` (`src/security/crypto.js:11,21`, `src/session.js:6,18`) | — |
-| `Math.random()` para tokens | Cumple | No presente; se usa `randomBytes(32)` (`src/routes/auth.js:258`, `src/security/password.js:31`) | — |
-| Algoritmos propios | Cumple | No presente; usa `node:crypto` y `argon2` | — |
-| Contraseñas cifradas en vez de hasheadas | Cumple | No presente; hash Argon2id en `password_hash` (`src/routes/auth.js:72-80`) | — |
+| Amenaza | STRIDE | Ejemplo en SecureVault | Mitigación implementada | Archivo |
+| --- | --- | --- | --- | --- |
+| Fuerza bruta de contraseñas | S | Probar miles de contraseñas contra `/api/auth/login` | Rate limit de 5 fallos por IP en 15 minutos (429) y bloqueo de la cuenta 15 minutos tras 5 fallos | `src/routes/auth.js` |
+| Robo de sesión | S | Leer la cookie con un script inyectado o enviarla desde otro sitio | Cookie `HttpOnly`, `Secure` y `SameSite=Strict`; ID de sesión regenerado al iniciar sesión; sesiones cerradas al cambiar contraseña o rol | `src/session.js`, `src/routes/auth.js`, `src/routes/admin.js` |
+| Manipulación del cifrado | T | Cambiar bytes de `content_enc` en la BD | El tag GCM de 16 bytes detecta cualquier cambio; el descifrado falla y responde 500 genérico | `src/security/crypto.js` |
+| Mover datos cifrados entre cuentas | T | Copiar el `content_enc` de una nota de Ana a una nota de Luis | El AAD liga el cifrado al id del dueño; el descifrado falla y se registra `decrypt_failed` | `src/security/crypto.js`, `src/routes/notes.js` |
+| Negar un cambio de rol | R | Un administrador niega haber promovido a un usuario | Evento `role_changed` con id del admin, usuario afectado, rol anterior y nuevo, IP y fecha | `src/routes/admin.js`, `src/audit.js` |
+| Negar intentos de acceso | R | Un usuario niega haber intentado leer notas ajenas | Eventos `access_denied`, `login_failed` y `login_success` con usuario, IP y fecha | `src/audit.js`, `src/middleware/auth.js`, `src/routes/notes.js` |
+| IDOR | I | Pedir `GET /api/notes/:id` con el id de una nota ajena | Toda consulta filtra por `owner_id` de la sesión; responde 404 para no confirmar que la nota existe | `src/routes/notes.js` |
+| XSS | I | Crear una nota con título `<img src=x onerror=alert(1)>` | El frontend usa solo `textContent`; la CSP de `helmet` bloquea scripts inline como segunda capa | `public/js/`, `src/app.js` |
+| Robo de la base de datos | I | Obtener un respaldo de la BD | Contraseñas con Argon2id, notas y teléfono con AES-256-GCM, tokens solo como hash | `src/security/` |
+| Enumeración de usuarios | I | Ver si un correo existe por el mensaje o el tiempo de respuesta | Mensajes genéricos en login, registro y recuperación; hash señuelo para igualar tiempos | `src/routes/auth.js`, `src/security/password.js` |
+| Cuerpos enormes | D | Enviar JSON de varios MB | Límite de 10 KB en el cuerpo (413) y límites de tamaño en notas | `src/app.js`, `src/validation/notes.js` |
+| Agotar recursos | D | Crear notas sin fin o abusar de registro y recuperación | Máximo 100 notas por usuario; rate limit en registro, recuperación y restablecimiento; timeouts de conexión y de consulta en la BD | `src/routes/notes.js`, `src/routes/auth.js`, `src/db.js` |
+| Registrarse como admin | E | Enviar `"role": "admin"` en el registro | `zod` con `.strict()` rechaza el campo (400); el rol siempre se asigna `user` en el servidor | `src/validation/auth.js`, `src/routes/auth.js` |
+| Entrar al panel sin permiso | E | Un usuario normal llama a `/api/admin/users` | `requireRole('admin')` consulta el rol en la BD en cada petición (403) y registra `access_denied`; un admin no puede cambiar su propio rol | `src/middleware/auth.js`, `src/routes/admin.js` |
 
----
+## Casos de abuso
 
-## D) Entorno de producción
+| Como atacante intento... | El sistema responde... |
+| --- | --- |
+| Adivinar la contraseña de Ana con 7 intentos seguidos | Los 5 primeros: 401 "Credenciales inválidas". Desde el sexto: 429. La cuenta queda bloqueada 15 minutos y se registra una alerta. |
+| Registrarme enviando `"role": "admin"` | 400 "Datos de entrada inválidos". |
+| Leer, editar o borrar la nota de otro usuario con su id | 404 "No encontrado" en las tres operaciones, y `access_denied` en la bitácora. |
+| Entrar a `/api/admin/users` con una cuenta normal | 403 "Acceso denegado", y `access_denied` en la bitácora. |
+| Inyectar `<script>alert(1)</script>` en una nota | 201 al guardarla; al mostrarla se ve como texto y no se ejecuta. |
+| Reutilizar un token de recuperación ya usado | 400 "Token inválido o expirado". |
+| Enviar un cuerpo JSON de más de 10 KB | 413 "Solicitud inválida". |
+| Copiar en la BD el cifrado de una nota ajena a una nota mía | 500 "Error interno" al leerla, y `decrypt_failed` en la bitácora. |
 
-| Requisito | Estado | Evidencia (archivo:línea) | Qué falta |
-| :--- | :--- | :--- | :--- |
-| `app.set('trust proxy', 1)` en producción | Cumple | `src/app.js:14-16` | — |
-| Variables y llaves leídas solo de `process.env` | Cumple | `src/db.js:4,10`, `src/session.js:6,18,25`, `src/security/crypto.js:11,21`, `src/server.js:5` | — |
-| Conexión a la BD cifrada (`ssl`) | Cumple | `src/db.js:11` (`ssl: { rejectUnauthorized: true }`) | — |
-| Despliegue reproducible (pipeline CI/CD o pasos en README) | Falta | `README.md:1-3` (sin pasos); sin `.github/workflows/` | Pipeline CI/CD y documentación de despliegue en `README.md`. |
-| HTTPS, calificación de cabeceras, SSL Labs y `NODE_ENV=production` en vivo | Verificar manualmente | `src/app.js:14,19`, `src/session.js:25` | Comprobar en navegador y herramientas externas sobre la URL de producción. |
+## Análisis de la llave de cifrado
 
----
+**Si se pierde `DATA_ENCRYPTION_KEY`**, el contenido de las notas y los teléfonos queda irrecuperable: AES-256-GCM no tiene puerta trasera. Las cuentas siguen funcionando, porque las contraseñas usan Argon2id y no dependen de esa llave. Por eso la llave de producción se respalda en un gestor de contraseñas, fuera del servidor y del repositorio.
 
-## E) Entregables
+**Cómo rotarla sin perder datos**, con el diseño actual:
 
-| Requisito | Estado | Evidencia (archivo:línea) | Qué falta |
-| :--- | :--- | :--- | :--- |
-| `README.md` con descripción, instalación, variables (solo nombres) y despliegue | Falta | `README.md:1-3` | Redactar documentación completa en `README.md`. |
-| `.gitignore` que excluya `.env` y `node_modules` | Cumple | `.gitignore:1-4` | — |
-| Script `"test"` real en `package.json` | Falta | `package.json:9` (placeholder `exit 1`) | Reemplazar por ejecución real (ej. `node --test`). |
-| Carpeta de pruebas automatizadas | Falta | Raíz del proyecto sin carpeta `test/` o `tests/` | Crear carpeta `test/` con pruebas automatizadas. |
+1. Generar una llave nueva y configurarla como `DATA_ENCRYPTION_KEY_V2`, sin quitar la v1.
+2. `src/security/crypto.js` usa automáticamente la versión más alta para cifrar todo lo nuevo (prefijo `v2.`).
+3. Los datos existentes siguen legibles: el prefijo `v1.` de cada valor indica con qué llave descifrarlo.
+4. Un script de re-cifrado recorre las notas y los teléfonos, descifra cada valor con su versión y lo vuelve a cifrar con la v2.
+5. Cuando ya no quedan valores `v1.`, se retira la llave v1.
 
----
+## Riesgos residuales
 
-## PENDIENTES PRIORIZADOS
-
-1. **Pruebas automatizadas y script `"test"` real (Alto impacto en nota — E, A08):** crear la carpeta `test/` con pruebas de autenticación, control de acceso (A01), cifrado/AAD (A04) y validación (A05), y actualizar `"test"` en `package.json` (ej. `"node --test"`).
-2. **`README.md` completo con guía de instalación, variables de entorno y despliegue (Alto impacto — D, E):** actualizar `README.md` con descripción, instalación local, lista de variables (solo nombres, sin valores) y pasos reproducibles de despliegue.
-3. **Pipeline de CI/CD y Dependabot (Medio-Alto impacto — A03, A08, D):** crear `.github/workflows/ci.yml` (usando `npm ci` y `npm test` antes del deploy) y `.github/dependabot.yml` para actualizaciones de seguridad.
-4. **Documento de modelo de amenazas STRIDE / DFD (Medio impacto — A06):** crear `docs/threat-model.md` documentando activos, actores, flujos de datos y mitigaciones STRIDE.
-5. **Logger estructurado JSON (Medio impacto — A09):** incorporar `pino` (o `winston`) en un módulo dedicado (ej. `src/logger.js`) y reemplazar `console.error`/`console.warn` en `src/app.js`, `src/audit.js`, `src/db.js` y `src/server.js`.
-6. **Configuración explícita de CORS (Bajo-Medio impacto — A02):** definir una política explícita de orígenes permitidos en `src/app.js` (si aplica acceso desde otros orígenes o para reforzar la postura por defecto).
-7. **Verificación manual en producción (Obligatorio antes de entrega):** comprobar en el servidor desplegado que `NODE_ENV=production` esté activo, que la cookie `sv.sid` lleve `Secure`, `HttpOnly`, `SameSite=Strict`, y validar cabeceras/TLS en navegador y SSL Labs.
-
----
-
-## Resumen de cumplimiento
-
-| Estado | Cantidad |
-| :--- | :---: |
-| **Cumple** | 25 |
-| **Parcial** | 5 |
-| **Falta** | 4 |
-| **Verificar manualmente** | 1 |
-| **Total evaluado** | **35** |
+| Riesgo | Detalle |
+| --- | --- |
+| Escritura directa en la BD | Un atacante con credenciales de Neon podría reemplazar un `password_hash` o cambiar un rol. La aplicación no lo impide; se reduce con credenciales robustas, TLS y acceso restringido al panel de Neon. |
+| Títulos sin cifrar | Solo el contenido de las notas se cifra; los títulos no deben llevar información sensible. |
+| Rate limit en memoria | El contador vive en el proceso. Con varias instancias, cada una contaría por separado; con la única instancia del plan gratuito no aplica. |
+| Recuperación sin correo | El enlace solo se imprime en la consola de desarrollo; en producción haría falta un proveedor de correo. |
+| Sin MFA | La autenticación depende solo de la contraseña. |
+| Arranque en frío | El plan gratuito de Render apaga el servicio tras 15 minutos sin tráfico; la primera petición tarda cerca de un minuto. |
