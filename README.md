@@ -28,13 +28,7 @@ Node.js 24 · Express 5 · PostgreSQL (Neon) · `pg` · `argon2` · `helmet` · 
 | A03 Software Supply Chain Failures | `package-lock.json` versionado, instalación con `npm ci`, `npm audit` en CI, Dependabot semanal | `.github/workflows/ci.yml`, `.github/dependabot.yml` |
 | A04 Cryptographic Failures | Argon2id (m=19456, t=2, p=1); AES-256-GCM con IV aleatorio de 12 bytes, tag de 16 bytes, AAD ligado al dueño y versión de llave; llaves solo en variables de entorno; TLS con `verify-full` hacia la BD | `src/security/password.js`, `src/security/crypto.js`, `src/db.js` |
 | A05 Injection | Consultas parametrizadas (`$1`, `$2`) en todo el acceso a datos; validación con `zod` y `.strict()`; el frontend muestra datos solo con `textContent`, sin `innerHTML` ni scripts inline | `src/db.js`, `src/validation/`, `public/js/` |
-| A06 Insecure Design | Límites de negocio: 100 notas por usuario, título de 120 y contenido de 5000 caracteres, cuerpo de 10 KB; modelo de amenazas STRIDE | `src/routes/notes.js`, `src/validation/notes.js`, `docs/"--- ¿Se coló algún secreto o credencial? (debe salir VACIO) ---"
-Select-String -Path README.md, docs\threat-model.md -Pattern "postgresql://.*:.*@|npg_|Password123|@test\.com|DATA_ENCRYPTION_KEY=\S"
-"--- ¿Está el diagrama? ---"
-Select-String -Path docs\threat-model.md -Pattern '```mermaid'
-git add -A
-git commit -m "docs: README completo y modelo de amenazas STRIDE"
-git push` |
+| A06 Insecure Design | Límites de negocio: 100 notas por usuario, título de 120 y contenido de 5000 caracteres, cuerpo de 10 KB; modelo de amenazas STRIDE | `src/routes/notes.js`, `src/validation/notes.js`, `docs/threat-model.md` |
 | A07 Authentication Failures | Rate limiting en login (429), bloqueo de cuenta 15 minutos tras 5 fallos, mensajes genéricos, comparación con hash señuelo para igualar tiempos, regeneración del ID de sesión al iniciar sesión | `src/routes/auth.js`, `src/session.js` |
 | A08 Software or Data Integrity Failures | Pipeline de CI que ejecuta pruebas y auditoría en cada push y pull request; código a `main` solo por pull request; sin scripts de CDN | `.github/workflows/ci.yml`, `public/` |
 | A09 Security Logging and Alerting Failures | Bitácora `audit_logs` (logins, fallos, bloqueos, accesos denegados, cambios de rol) sin contraseñas ni tokens; logs JSON con `pino` y redacción de campos sensibles; alerta ante bloqueo o rate limit | `src/audit.js`, `src/logger.js` |
