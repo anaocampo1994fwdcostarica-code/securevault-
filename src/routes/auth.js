@@ -1,3 +1,4 @@
+import { logger } from '../logger.js';
 import { randomBytes, createHash } from 'node:crypto';
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
@@ -272,7 +273,7 @@ router.post('/forgot-password', forgotLimiter, async (req, res, next) => {
 
       // A09: nunca imprimir el token en producción
       if (process.env.NODE_ENV !== 'production') {
-        console.log('[DEV] Enlace de recuperación: http://localhost:3000/reset?token=' + token);
+        logger.info({ resetUrl: `http://localhost:${process.env.PORT || 3000}/reset?token=${token}` }, 'DEV: enlace de recuperacion');
       }
     }
 

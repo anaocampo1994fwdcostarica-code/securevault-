@@ -64,7 +64,7 @@ app.use((req, res) => {
 
 // Manejador global de errores – A10: fallar de forma segura sin stack trace
 app.use((err, req, res, next) => {
-  console.error(`Error en ${req.method} ${req.originalUrl}:`, err.message);
+  logger.error({ err: err.message, method: req.method, path: req.originalUrl }, 'Error en la peticion');
   const status = err.status || err.statusCode;
   if (status >= 400 && status <= 499) {
     return res.status(status).json({ error: 'Solicitud inválida' });

@@ -1,3 +1,4 @@
+import { logger } from './logger.js';
 import { Pool } from 'pg';
 
 // A10: fallar de forma segura si falta la cadena de conexión
@@ -14,7 +15,7 @@ const pool = new Pool({
   statement_timeout: 5000            // A10: límite de ejecución de consultas
 });
 
-pool.on('error', (err) => console.error('Error inesperado en el pool de BD:', err.message));
+pool.on('error', (err) => logger.error({ err: err.message }, 'Error inesperado en el pool de BD'));
 
 /**
  * Ejecuta una consulta parametrizada.

@@ -1,3 +1,4 @@
+import { logger } from './logger.js';
 import { query } from './db.js';
 
 const SENSITIVE_KEYS = new Set([
@@ -37,10 +38,10 @@ export async function logEvent(event, { userId = null, ip = null, metadata = {} 
 
     // A09: alerta simple en consola ante eventos de fuerza bruta o bloqueo
     if (event === 'account_locked' || event === 'login_rate_limited') {
-      logger.warn('[ALERTA DE SEGURIDAD]', event, 'ip:', ip);
+      logger.warn({ event, ip, alerta: true }, 'ALERTA DE SEGURIDAD');
     }
   } catch (err) {
     // A09/A10: registrar fallo de auditoría en consola sin interrumpir la petición
-    console.error('Error al registrar evento de auditoría:', err.message);
+    logger.error({ err: err.message }, 'Error al registrar evento de auditoria');
   }
 }
