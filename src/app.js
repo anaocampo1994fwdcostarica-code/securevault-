@@ -17,7 +17,13 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.disable('x-powered-by'); // A02: ocultar detalles del framework
-app.use(helmet()); // A02: cabeceras de seguridad
+app.use(helmet()); 
+// A02: la app no usa estas APIs del navegador; se bloquean para cualquier script
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+  next();
+});
+// A02: cabeceras de seguridad
 // A02/A08: servir archivos estáticos locales sin scripts inline antes de las rutas /api
 app.use(express.static(path.join(import.meta.dirname, '..', 'public'), { extensions: ['html'] }));
 app.use(express.json({ limit: '10kb' })); // A06: límite de diseño para tamaño de cuerpo
