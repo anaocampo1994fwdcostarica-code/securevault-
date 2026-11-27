@@ -29,7 +29,23 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.disable('x-powered-by'); // A02: ocultar detalles del framework
-app.use(helmet()); 
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      imgSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"],
+      upgradeInsecureRequests: []
+    }
+  }
+}));
 // A02: la app no usa estas APIs del navegador; se bloquean para cualquier script
 app.use((req, res, next) => {
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
@@ -50,6 +66,11 @@ app.get('/health', async (req, res) => {
     // RF-08: no revelar detalles del error
     res.status(503).json({ status: 'degraded' });
   }
+});
+
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
 });
 
 app.use('/api/auth', authRoutes);
