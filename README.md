@@ -24,13 +24,13 @@ Node.js 24 · Express 5 · PostgreSQL (Neon) · `pg` · `argon2` · `helmet` · 
 | OWASP Top 10:2025 | Medida implementada | Dónde |
 | --- | --- | --- |
 | A01 Broken Access Control | `requireAuth` y `requireRole` (rol leído de la BD); toda consulta de notas filtra por `owner_id` de la sesión; un acceso ajeno responde 404 y queda en la bitácora | `src/middleware/auth.js`, `src/routes/notes.js` |
-| A02 Security Misconfiguration | `helmet` con CSP, `x-powered-by` desactivado, errores genéricos sin stack trace, `trust proxy` en producción, CORS limitado al mismo origen (no se habilitan orígenes externos) | `src/app.js` |
+| A02 Security Misconfiguration | `helmet` con CSP, `x-powered-by` desactivado, errores genéricos sin stack trace, CORS limitado al mismo origen (no se habilitan orígenes externos); Permissions-Policy (cámara, micrófono, ubicación, pagos y USB deshabilitados); `trust proxy` con lista explícita de proxies de Render y Cloudflare (no `true`). Calificación A en securityheaders.com | `src/app.js` |
 | A03 Software Supply Chain Failures | `package-lock.json` versionado, instalación con `npm ci`, `npm audit` en CI, Dependabot semanal | `.github/workflows/ci.yml`, `.github/dependabot.yml` |
 | A04 Cryptographic Failures | Argon2id (m=19456, t=2, p=1); AES-256-GCM con IV aleatorio de 12 bytes, tag de 16 bytes, AAD ligado al dueño y versión de llave; llaves solo en variables de entorno; TLS con `verify-full` hacia la BD | `src/security/password.js`, `src/security/crypto.js`, `src/db.js` |
 | A05 Injection | Consultas parametrizadas (`$1`, `$2`) en todo el acceso a datos; validación con `zod` y `.strict()`; el frontend muestra datos solo con `textContent`, sin `innerHTML` ni scripts inline | `src/db.js`, `src/validation/`, `public/js/` |
 | A06 Insecure Design | Límites de negocio: 100 notas por usuario, título de 120 y contenido de 5000 caracteres, cuerpo de 10 KB; modelo de amenazas STRIDE | `src/routes/notes.js`, `src/validation/notes.js`, `docs/threat-model.md` |
 | A07 Authentication Failures | Rate limiting en login (429), bloqueo de cuenta 15 minutos tras 5 fallos, mensajes genéricos, comparación con hash señuelo para igualar tiempos, regeneración del ID de sesión al iniciar sesión | `src/routes/auth.js`, `src/session.js` |
-| A08 Software or Data Integrity Failures | Pipeline de CI que ejecuta pruebas y auditoría en cada push y pull request; código a `main` solo por pull request; sin scripts de CDN | `.github/workflows/ci.yml`, `public/` |
+| A08 Software or Data Integrity Failures | Pipeline de CI que ejecuta pruebas y auditoría en cada push y pull request; código a `main` solo por pull request; sin scripts de CDN; escaneo de secretos con gitleaks en CI | `.github/workflows/ci.yml`, `public/` |
 | A09 Security Logging and Alerting Failures | Bitácora `audit_logs` (logins, fallos, bloqueos, accesos denegados, cambios de rol) sin contraseñas ni tokens; logs JSON con `pino` y redacción de campos sensibles; alerta ante bloqueo o rate limit | `src/audit.js`, `src/logger.js` |
 | A10 Mishandling of Exceptional Conditions | Manejador global de errores con respuesta genérica; si el descifrado falla, la petición falla cerrada; manejo de `unhandledRejection` y `uncaughtException`; timeouts de conexión y de consulta en la BD | `src/app.js`, `src/server.js`, `src/db.js` |
 
@@ -85,16 +85,29 @@ Solo se documentan los nombres. Los valores reales viven en `.env` (local) o en 
 | `npm run db:migrate` | Crea las tablas definidas en `db/schema.sql`. |
 | `npm run make-admin -- correo@ejemplo.com` | Convierte un usuario existente en administrador. |
 | `node --env-file=.env scripts/unlock-user.js correo@ejemplo.com` | Desbloquea una cuenta bloqueada por intentos fallidos. |
+| `node --env-file=.env scripts/rotate-key.js --dry-run` | Cuenta los registros que se re-cifrarían, sin escribir nada. |
+| `node --env-file=.env scripts/rotate-key.js` | Re-cifra notas y teléfonos con la llave más nueva. |
 
 El primer administrador se crea siempre con `make-admin` desde una terminal con acceso a la base de datos. No existe ningún endpoint público para asignar roles de administrador a uno mismo.
+
+## Rotación de llaves
+
+1. Generar una llave nueva: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`
+2. Configurarla como `DATA_ENCRYPTION_KEY_V2` (en `.env` o en el panel de Render), **sin quitar** `DATA_ENCRYPTION_KEY` (v1). Desde ese momento todo lo nuevo se cifra con la v2.
+3. Ejecutar `node --env-file=.env scripts/rotate-key.js --dry-run` para ver cuántos registros se re-cifrarían.
+4. Ejecutar `node --env-file=.env scripts/rotate-key.js` para re-cifrarlos. El script solo imprime conteos y deja intacto cualquier registro que no pueda descifrar.
+5. Verificar que las notas y los teléfonos se leen correctamente en la aplicación y que el script reporta 0 errores.
+6. Solo entonces retirar la llave v1 (conservando un respaldo en el gestor de contraseñas).
 
 ## Pruebas e integración continua
 
 - `npm test` ejecuta 18 pruebas sobre cifrado (formato, IV único, AAD, detección de manipulación), hash de contraseñas y validación de entradas. No necesitan base de datos ni secretos.
-- `.github/workflows/ci.yml` corre en cada push a `main` y `ana` y en cada pull request hacia `main`: `npm ci`, `npm test` y `npm audit --audit-level=high`, con permisos de solo lectura.
+- `.github/workflows/ci.yml` corre en cada push a `main` y `ana` y en cada pull request hacia `main`: `npm ci`, `npm test` y `npm audit --audit-level=high`, con permisos de solo lectura. Un segundo job (`secretos`) revisa todo el historial con gitleaks.
 - `.github/dependabot.yml` revisa cada semana las dependencias de npm y las acciones de GitHub.
 
 ## Despliegue en producción (Render + Neon)
+
+**URL de producción:** https://securevault-m0xr.onrender.com
 
 1. Crear un proyecto **nuevo** en Neon para producción, separado del de desarrollo.
 2. Crear localmente `.env.production` con `NODE_ENV=production`, la cadena de Neon de producción y llaves **nuevas** (no reutilizar las de desarrollo). El archivo está excluido por `.gitignore`.

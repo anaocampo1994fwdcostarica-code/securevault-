@@ -93,7 +93,7 @@ Límites de confianza: entre Internet y Render (todo lo que llega del navegador 
 1. Generar una llave nueva y configurarla como `DATA_ENCRYPTION_KEY_V2`, sin quitar la v1.
 2. `src/security/crypto.js` usa automáticamente la versión más alta para cifrar todo lo nuevo (prefijo `v2.`).
 3. Los datos existentes siguen legibles: el prefijo `v1.` de cada valor indica con qué llave descifrarlo.
-4. Un script de re-cifrado recorre las notas y los teléfonos, descifra cada valor con su versión y lo vuelve a cifrar con la v2.
+4. El script de re-cifrado `scripts/rotate-key.js` recorre las notas y los teléfonos, descifra cada valor con su versión y lo vuelve a cifrar con la v2. Cada registro se actualiza en su propia transacción; si uno no se puede descifrar, se cuenta como error y no se modifica. Con `--dry-run` solo cuenta, sin escribir.
 5. Cuando ya no quedan valores `v1.`, se retira la llave v1.
 
 ## Riesgos residuales
@@ -106,3 +106,12 @@ Límites de confianza: entre Internet y Render (todo lo que llega del navegador 
 | Recuperación sin correo | El enlace solo se imprime en la consola de desarrollo; en producción haría falta un proveedor de correo. |
 | Sin MFA | La autenticación depende solo de la contraseña. |
 | Arranque en frío | El plan gratuito de Render apaga el servicio tras 15 minutos sin tráfico; la primera petición tarda cerca de un minuto. |
+| Rate limit por IP compartida | Usuarios que comparten IP pública (NAT, wifi de la universidad) pueden quedar bloqueados 15 minutos por los fallos de otro. Se acepta porque es temporal. |
+| CSP con `style-src 'unsafe-inline'` | Configuración por defecto de `helmet`: permite estilos inline, no scripts. Riesgo bajo; mejora futura: eliminar estilos inline. |
+
+## Hallazgos de la verificación en producción
+
+| Hallazgo | Causa | Corrección |
+| --- | --- | --- |
+| La bitácora registraba IPs internas 10.x en vez de la del cliente | `trust proxy = 1`, pero la cadena es Cloudflare -> proxy de Render -> app | Lista explícita de proxies de confianza (Render y rangos oficiales de Cloudflare) |
+| La alerta de seguridad fallaba en silencio | `audit.js` usaba `logger` sin importarlo; el `catch` ocultaba el `ReferenceError` | Import corregido y logs migrados a `pino`; verificado en Render Logs |
